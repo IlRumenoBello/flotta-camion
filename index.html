@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flotta Camion — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-box">
+      <div class="login-logo">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="8" fill="#E8FF47"/><path d="M6 24h4l2-8h12l2 8h4M8 20h20" stroke="#111" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="26" r="2" fill="#111"/><circle cx="25" cy="26" r="2" fill="#111"/></svg>
+        <span>FlottaManager</span>
+      </div>
+      <h1>Accedi</h1>
+      <p class="login-sub">Gestisci la tua flotta di camion</p>
+      <div id="loginError" class="error-msg" style="display:none"></div>
+      <input type="email" id="emailInput" placeholder="Email" autocomplete="email">
+      <input type="password" id="passwordInput" placeholder="Password" autocomplete="current-password">
+      <button id="loginBtn" onclick="doLogin()">Entra</button>
+      <button id="registerBtn" onclick="doRegister()">Crea account</button>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="appScreen" style="display:none">
+    <nav class="topnav">
+      <div class="nav-logo">
+        <svg width="28" height="28" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="8" fill="#E8FF47"/><path d="M6 24h4l2-8h12l2 8h4M8 20h20" stroke="#111" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="26" r="2" fill="#111"/><circle cx="25" cy="26" r="2" fill="#111"/></svg>
+        <span>FlottaManager</span>
+      </div>
+      <div class="nav-center">
+        <select id="monthSelect" onchange="renderAll()">
+          <option>Gennaio</option><option>Febbraio</option><option>Marzo</option>
+          <option>Aprile</option><option>Maggio</option><option>Giugno</option>
+          <option>Luglio</option><option>Agosto</option><option>Settembre</option>
+          <option>Ottobre</option><option>Novembre</option><option>Dicembre</option>
+        </select>
+        <select id="yearSelect" onchange="renderAll()"></select>
+      </div>
+      <div class="nav-right">
+        <span id="userEmail" class="user-email"></span>
+        <button class="btn-logout" onclick="doLogout()">Esci</button>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <!-- SUMMARY -->
+      <div class="summary-grid" id="summaryCards"></div>
+
+      <!-- CHART -->
+      <div class="chart-section">
+        <div class="section-header">
+          <h2>Profitto per camion</h2>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="profitChart" role="img" aria-label="Grafico profitto per camion"></canvas>
+        </div>
+      </div>
+
+      <!-- TRUCKS -->
+      <div class="section-header" style="margin-bottom:16px">
+        <h2>Camion</h2>
+        <button class="btn-add" onclick="addTruck()">+ Aggiungi camion</button>
+      </div>
+      <div id="truckList"></div>
+    </main>
+  </div>
+
+  <div id="saveToast" class="toast">Salvato ✓</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
