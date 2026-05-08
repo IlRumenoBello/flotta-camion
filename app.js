@@ -31,10 +31,9 @@ let currentPage = 'dashboard';
 
 const MONTHS = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
   'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-const COST_KEYS = ['gasolio','autista','manutenzione','pedaggi','assicurazione','ammortamento'];
+const COST_KEYS = ['autista','assicurazione','ammortamento'];
 const COST_LABELS = {
-  gasolio:'Gasolio', autista:'Autista', manutenzione:'Manutenzione',
-  pedaggi:'Pedaggi', assicurazione:'Assicurazione', ammortamento:'Ammortamento'
+  autista:'Autista', assicurazione:'Assicurazione', ammortamento:'Ammortamento'
 };
 
 // ── Helpers ───────────────────────────────────────────
@@ -64,24 +63,45 @@ async function saveData() {
   if (!currentUserId) return;
   const key = getPeriod();
   try {
-    await setDoc(doc(db, 'flotte', currentUserId, 'mesi', key), { trucks, trips, costi });
+    // Trucks saved globally (not per month)
+    await setDoc(doc(db, 'flotte', currentUserId, 'config', 'trucks'), { trucks });
+    // Trips and costi saved per month
+    await setDoc(doc(db, 'flotte', currentUserId, 'mesi', key), { trips, costi });
     showToast();
   } catch(e) { console.error(e); }
 }
 
-function loadData() {
+async function saveTrucksOnly() {
+  if (!currentUserId) return;
+  try {
+    await setDoc(doc(db, 'flotte', currentUserId, 'config', 'trucks'), { trucks });
+    showToast();
+  } catch(e) { console.error(e); }
+}
+
+async function loadData() {
   if (!currentUserId) return;
   const key = getPeriod();
+
+  // Load trucks globally (once)
+  const truckSnap = await getDoc(doc(db, 'flotte', currentUserId, 'config', 'trucks'));
+  if (truckSnap.exists()) {
+    trucks = truckSnap.data().trucks || [];
+  } else {
+    trucks = [defaultTruck(1)];
+    await saveTrucksOnly();
+  }
+
+  // Listen to month-specific data (trips + costi)
   if (unsubscribe) unsubscribe();
   unsubscribe = onSnapshot(doc(db, 'flotte', currentUserId, 'mesi', key), snap => {
     if (snap.exists()) {
       const data = snap.data();
-      trucks = data.trucks || [];
       trips = data.trips || [];
       costi = data.costi || [];
     } else {
-      trucks = [defaultTruck(1)];
       trips = [];
+      costi = [];
     }
     renderCurrentPage();
   });
@@ -581,18 +601,18 @@ function renderCamion() {
 
 window.addTruck = function() {
   trucks.push(defaultTruck(trucks.length+1));
-  renderCamion(); scheduleSave();
+  renderCamion(); saveTrucksOnly();
 };
 window.removeTruck = function(id) {
   if(!confirm('Rimuovere questo camion?')) return;
-  trucks=trucks.filter(t=>t.id!==id); renderCamion(); scheduleSave();
+  trucks=trucks.filter(t=>t.id!==id); renderCamion(); saveTrucksOnly();
 };
 window.updateTruckField = function(id,field,val) {
   const t=trucks.find(x=>x.id===id); if(t) t[field]=parseFloat(val)||0;
-  renderCamion(); scheduleSave();
+  renderCamion(); saveTrucksOnly();
 };
 window.updateTruckName = function(id,val) {
-  const t=trucks.find(x=>x.id===id); if(t) t.name=val; scheduleSave();
+  const t=trucks.find(x=>x.id===id); if(t) t.name=val; saveTrucksOnly();
 };
 
 // ── Toast ─────────────────────────────────────────────
