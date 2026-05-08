@@ -20,7 +20,9 @@ const db = getFirestore(app);
 // ── State ─────────────────────────────────────────────
 let trucks = [];
 let trips = [];
+let costi = [];
 let editingTripId = null;
+let editingCostoId = null;
 let charts = {};
 let saveTimeout = null;
 let currentUserId = null;
@@ -61,7 +63,7 @@ async function saveData() {
   if (!currentUserId) return;
   const key = getPeriod();
   try {
-    await setDoc(doc(db, 'flotte', currentUserId, 'mesi', key), { trucks, trips });
+    await setDoc(doc(db, 'flotte', currentUserId, 'mesi', key), { trucks, trips, costi });
     showToast();
   } catch(e) { console.error(e); }
 }
@@ -75,6 +77,7 @@ function loadData() {
       const data = snap.data();
       trucks = data.trucks || [];
       trips = data.trips || [];
+      costi = data.costi || [];
     } else {
       trucks = [defaultTruck(1)];
       trips = [];
@@ -187,6 +190,7 @@ function renderCurrentPage() {
   if (currentPage === 'dashboard') renderDashboard();
   else if (currentPage === 'viaggi') renderViagg();
   else if (currentPage === 'camion') renderCamion();
+  else if (currentPage === 'costi') renderCosti();
 }
 
 // ── DASHBOARD ─────────────────────────────────────────
@@ -544,3 +548,133 @@ function showToast() {
 document.addEventListener('keydown', e => {
   if (e.key==='Enter' && document.getElementById('loginScreen').style.display!=='none') window.doLogin();
 });
+
+// ── COSTI ─────────────────────────────────────────────
+window.renderCosti = function() {
+  const period = getPeriod();
+  const el = document.getElementById('costiSub');
+  if (el) el.textContent = period;
+
+  // populate truck filter
+  const sel = document.getElementById('filterCostoTruck');
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Tutti i camion</option>' +
+      trucks.map(t=>`<option value="${t.id}" ${String(t.id)===cur?'selected':''}>${t.name}</option>`).join('');
+  }
+
+  const filterTruck = document.getElementById('filterCostoTruck')?.value || '';
+  const filterCat = document.getElementById('filterCostoCategoria')?.value || '';
+  const filterSearch = (document.getElementById('filterCostoSearch')?.value||'').toLowerCase();
+
+  let filtered = [...costi].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if (filterTruck) filtered = filtered.filter(c=>String(c.truckId)===String(filterTruck));
+  if (filterCat) filtered = filtered.filter(c=>c.categoria===filterCat);
+  if (filterSearch) filtered = filtered.filter(c=>(c.descrizione||'').toLowerCase().includes(filterSearch)||(c.note||'').toLowerCase().includes(filterSearch));
+
+  const totalFiltered = filtered.reduce((s,c)=>s+(parseFloat(c.importo)||0),0);
+  const totalAll = costi.reduce((s,c)=>s+(parseFloat(c.importo)||0),0);
+
+  // Summary cards
+  const catTotals = {};
+  costi.forEach(c=>{catTotals[c.categoria]=(catTotals[c.categoria]||0)+(parseFloat(c.importo)||0);});
+  const topCat = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0];
+
+  document.getElementById('costiSummary').innerHTML = `
+    <div class="s-card red"><div class="s-label">Totale costi mese</div><div class="s-value red">${fmtEur(totalAll)}</div></div>
+    <div class="s-card"><div class="s-label">Spese registrate</div><div class="s-value">${costi.length}</div></div>
+    <div class="s-card amber"><div class="s-label">Voce principale</div><div class="s-value" style="font-size:16px">${topCat?topCat[0]:'—'}</div>${topCat?`<div class="s-delta">${fmtEur(topCat[1])}</div>`:''}</div>
+    <div class="s-card"><div class="s-label">Filtrati</div><div class="s-value">${fmtEur(totalFiltered)}</div></div>
+  `;
+
+  document.getElementById('costoCount').textContent = `${filtered.length} spese`;
+
+  const tableEl = document.getElementById('costoTable');
+  if (!filtered.length) {
+    tableEl.innerHTML = `<div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <div>Nessuna spesa trovata.<br>Clicca "+ Nuovo costo" per aggiungerne una.</div>
+    </div>`; return;
+  }
+
+  tableEl.innerHTML = `<table class="trip-table">
+    <thead><tr><th>Data</th><th>Camion</th><th>Categoria</th><th>Descrizione</th><th>Importo</th><th>Note</th><th></th></tr></thead>
+    <tbody>${filtered.map(c=>{
+      const t = trucks.find(x=>x.id===c.truckId);
+      return `<tr>
+        <td class="mono">${c.date||'—'}</td>
+        <td><span class="tag">${t?t.name:'Generale'}</span></td>
+        <td><span class="tag" style="color:var(--amber);border-color:rgba(240,180,41,0.2)">${c.categoria||'—'}</span></td>
+        <td>${c.descrizione||'—'}</td>
+        <td class="mono red" style="color:var(--red)">-${fmtEur(parseFloat(c.importo)||0)}</td>
+        <td style="color:var(--text2);font-size:12px">${c.note||'—'}</td>
+        <td>
+          <div style="display:flex;gap:4px">
+            <button class="btn-icon edit" onclick="editCosto('${c.id}')" title="Modifica">✎</button>
+            <button class="btn-icon" onclick="deleteCosto('${c.id}')" title="Elimina">✕</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+};
+
+window.openCostoModal = function(id) {
+  editingCostoId = id || null;
+  const modal = document.getElementById('costoModal');
+  const sel = document.getElementById('costoTruck');
+  sel.innerHTML = '<option value="">— Generale (nessun camion) —</option>' +
+    trucks.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+
+  if (id) {
+    const c = costi.find(x=>x.id===id);
+    document.getElementById('costoModalTitle').textContent = 'Modifica costo';
+    if (c) {
+      sel.value = c.truckId||'';
+      document.getElementById('costoDate').value = c.date||'';
+      document.getElementById('costoCategoria').value = c.categoria||'Altro';
+      document.getElementById('costoImporto').value = c.importo||'';
+      document.getElementById('costoDescrizione').value = c.descrizione||'';
+      document.getElementById('costoNote').value = c.note||'';
+    }
+  } else {
+    document.getElementById('costoModalTitle').textContent = 'Nuovo costo';
+    document.getElementById('costoDate').value = new Date().toISOString().split('T')[0];
+    ['costoImporto','costoDescrizione','costoNote'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('costoCategoria').value = 'Gasolio';
+  }
+  modal.style.display = 'flex';
+};
+
+window.editCosto = function(id) { window.openCostoModal(id); };
+
+window.saveCosto = function() {
+  const truckVal = document.getElementById('costoTruck').value;
+  const costo = {
+    id: editingCostoId || Date.now().toString(),
+    truckId: truckVal ? parseInt(truckVal) : null,
+    date: document.getElementById('costoDate').value,
+    categoria: document.getElementById('costoCategoria').value,
+    importo: parseFloat(document.getElementById('costoImporto').value)||0,
+    descrizione: document.getElementById('costoDescrizione').value.trim(),
+    note: document.getElementById('costoNote').value.trim(),
+  };
+  if (editingCostoId) {
+    costi = costi.map(c=>c.id===editingCostoId?costo:c);
+  } else {
+    costi.push(costo);
+  }
+  closeCostoModal();
+  renderCosti();
+  scheduleSave();
+};
+
+window.deleteCosto = function(id) {
+  if (!confirm('Eliminare questa spesa?')) return;
+  costi = costi.filter(c=>c.id!==id);
+  renderCosti();
+  scheduleSave();
+};
+
+window.closeCostoModal = function() { document.getElementById('costoModal').style.display='none'; };
+window.closeCostoModalOutside = function(e) { if(e.target===document.getElementById('costoModal')) closeCostoModal(); };
