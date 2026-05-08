@@ -269,18 +269,45 @@ function renderProfitChart(tripsByTruck) {
 }
 
 function renderCostiChart() {
+  // Costi fissi per categoria (Autista, Assicurazione, Ammortamento)
   const totals = {};
   COST_KEYS.forEach(k => { totals[k] = trucks.reduce((s,t)=>s+(parseFloat(t[k])||0),0); });
-  const vals = COST_KEYS.map(k=>totals[k]).filter(v=>v>0);
-  const lbls = COST_KEYS.filter(k=>totals[k]>0).map(k=>COST_LABELS[k]);
-  const colors = ['#00E5A0','#58A6FF','#F0B429','#FF6B6B','#B794F4','#63B3ED'];
+
+  // Costi manuali raggruppati per categoria
+  costi.forEach(c => {
+    const cat = c.categoria || 'Altro';
+    totals[cat] = (totals[cat]||0) + (parseFloat(c.importo)||0);
+  });
+
+  // Build labels + values filtering out zeros
+  const allKeys = Object.keys(totals).filter(k=>totals[k]>0);
+  const lbls = allKeys.map(k => COST_LABELS[k] || k);
+  const vals = allKeys.map(k => totals[k]);
+  const colors = ['#00E5A0','#58A6FF','#F0B429','#FF6B6B','#B794F4','#63B3ED','#FC8181','#68D391','#F6AD55','#76E4F7'];
+
   const ctx = document.getElementById('costiChart')?.getContext('2d');
   if (!ctx) return;
   if (charts.costi) charts.costi.destroy();
+
+  if (vals.length === 0) {
+    // Show empty state message on canvas
+    charts.costi = null;
+    const c2d = ctx;
+    c2d.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    c2d.fillStyle = '#3D4349';
+    c2d.font = '13px Outfit, sans-serif';
+    c2d.textAlign = 'center';
+    c2d.fillText('Nessun costo registrato', ctx.canvas.width/2, ctx.canvas.height/2);
+    return;
+  }
+
   charts.costi = new Chart(ctx, {
-    type:'doughnut', data:{ labels:lbls, datasets:[{ data:vals, backgroundColor:colors, borderWidth:0, hoverOffset:6 }] },
+    type:'doughnut', data:{ labels:lbls, datasets:[{ data:vals, backgroundColor:colors.slice(0,vals.length), borderWidth:0, hoverOffset:6 }] },
     options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
-      plugins:{ legend:{ position:'right', labels:{ color:'#7D8590', font:{size:12}, padding:12, boxWidth:10 } } }
+      plugins:{
+        legend:{ position:'right', labels:{ color:'#7D8590', font:{size:12}, padding:12, boxWidth:10 } },
+        tooltip:{ callbacks:{ label: c => c.label+': '+c.raw.toLocaleString('it-IT')+'€' } }
+      }
     }
   });
 }
