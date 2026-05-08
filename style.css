@@ -96,13 +96,7 @@ select option { background: var(--bg3); }
 }
 #loginBtn:hover { background: var(--accent2); }
 
-#registerBtn {
-  padding: 10px; background: transparent;
-  border: 0.5px solid var(--border2); border-radius: var(--radius-sm);
-  color: var(--text2); font-size: 14px; font-family: 'Outfit', sans-serif;
-  cursor: pointer; transition: all 0.15s;
-}
-#registerBtn:hover { color: var(--text); border-color: var(--border2); background: var(--bg3); }
+
 
 .error-msg {
   background: var(--red-bg); border: 0.5px solid rgba(255,107,107,0.3);

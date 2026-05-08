@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged }
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -149,12 +149,7 @@ window.doLogin = async () => {
   try { await signInWithEmailAndPassword(auth, emailInput(), pwInput()); }
   catch(e) { showError(translateError(e.code)); }
 };
-window.doRegister = async () => {
-  hideError();
-  if (pwInput().length < 6) { showError('Password minimo 6 caratteri.'); return; }
-  try { await createUserWithEmailAndPassword(auth, emailInput(), pwInput()); }
-  catch(e) { showError(translateError(e.code)); }
-};
+
 window.doLogout = async () => { if(unsubscribe)unsubscribe(); await signOut(auth); };
 
 function emailInput() { return document.getElementById('emailInput').value.trim(); }
