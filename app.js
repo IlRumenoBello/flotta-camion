@@ -470,6 +470,17 @@ async function renderStorico() {
 function renderCamion() {
   const tripsByTruck = {};
   trips.forEach(v=>{if(!tripsByTruck[v.truckId])tripsByTruck[v.truckId]=0;tripsByTruck[v.truckId]+=(parseFloat(v.amount)||0);});
+
+  // Group manual costs by truck and category
+  const costiPerTruck = {};
+  costi.forEach(c => {
+    if (!c.truckId) return;
+    if (!costiPerTruck[c.truckId]) costiPerTruck[c.truckId] = {};
+    const cat = c.categoria || 'Altro';
+    if (!costiPerTruck[c.truckId][cat]) costiPerTruck[c.truckId][cat] = 0;
+    costiPerTruck[c.truckId][cat] += (parseFloat(c.importo)||0);
+  });
+
   const maxAbs = Math.max(...trucks.map(t=>Math.abs(profittoTruck(t,tripsByTruck[t.id]||0))),1);
 
   document.getElementById('truckList').innerHTML = trucks.map(t=>{
@@ -481,6 +492,9 @@ function renderCamion() {
     const p = r - c;
     const barW = Math.round(Math.abs(p)/maxAbs*100);
     const isPos = p>=0;
+    const truckCostiCat = costiPerTruck[t.id] || {};
+    const truckTrips = trips.filter(v=>String(v.truckId)===String(t.id));
+
     return `
     <div class="truck-card">
       <div class="truck-header">
@@ -496,7 +510,9 @@ function renderCamion() {
           <button class="btn-icon" onclick="removeTruck(${t.id})" title="Elimina">✕</button>
         </div>
       </div>
+
       <div class="truck-body">
+        <!-- COLONNA SINISTRA: costi fissi (input) + costi manuali (auto) -->
         <div>
           <div class="section-label">Costi fissi mensili</div>
           ${COST_KEYS.map(k=>`
@@ -506,7 +522,21 @@ function renderCamion() {
                 onchange="updateTruckField(${t.id},'${k}',this.value)"
                 oninput="updateTruckField(${t.id},'${k}',this.value)">
             </div>`).join('')}
+
+          ${costiManuali > 0 ? `
+          <div class="section-label" style="margin-top:14px;color:var(--red)">Costi inseriti manualmente</div>
+          ${Object.entries(truckCostiCat).map(([cat, tot])=>`
+            <div class="field-row">
+              <span class="field-label" style="display:flex;align-items:center;gap:5px">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block"></span>
+                ${cat}
+              </span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red)">-${fmtEur(tot)}</span>
+            </div>`).join('')}
+          ` : ''}
         </div>
+
+        <!-- COLONNA DESTRA: ricavi + riepilogo -->
         <div>
           <div class="section-label">Ricavi mensili fissi</div>
           <div class="field-row">
@@ -515,13 +545,33 @@ function renderCamion() {
               onchange="updateTruckField(${t.id},'ricavoMensile',this.value)"
               oninput="updateTruckField(${t.id},'ricavoMensile',this.value)">
           </div>
-          <div class="section-label" style="margin-top:16px">Riepilogo mese</div>
-          <div class="field-row"><span class="field-label">Ricavi da viaggi</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px">${fmtEur(tripRev)}</span></div>
-          <div class="field-row"><span class="field-label">Ricavi fissi</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px">${fmtEur(parseFloat(t.ricavoMensile)||0)}</span></div>
-          <div class="field-row"><span class="field-label">Costi fissi</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px">${fmtEur(cFissi)}</span></div>
-          <div class="field-row"><span class="field-label">Costi manuali</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red)">-${fmtEur(costiManuali)}</span></div>
-          <div class="field-row"><span class="field-label">Totale costi</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px">${fmtEur(c)}</span></div>
-          <div class="field-row" style="border:none;margin-top:4px"><span class="field-label" style="font-weight:600;color:var(--text)">Profitto</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:${isPos?'var(--green)':'var(--red)'}">${fmtProfit(p)}</span></div>
+
+          ${truckTrips.length > 0 ? `
+          <div class="section-label" style="margin-top:14px;color:var(--green)">Ricavi da viaggi (${truckTrips.length})</div>
+          ${truckTrips.slice(0,4).map(v=>`
+            <div class="field-row">
+              <span class="field-label" style="display:flex;align-items:center;gap:5px">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>
+                ${v.date||''} ${v.from||'?'}→${v.to||'?'}
+              </span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--green)">+${fmtEur(parseFloat(v.amount)||0)}</span>
+            </div>`).join('')}
+          ${truckTrips.length > 4 ? `<div style="font-size:11px;color:var(--text2);padding:4px 0">+${truckTrips.length-4} altri viaggi</div>` : ''}
+          ` : ''}
+
+          <div class="section-label" style="margin-top:14px">Riepilogo mese</div>
+          <div class="field-row">
+            <span class="field-label">✦ Totale ricavi</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--green)">${fmtEur(r)}</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">✦ Totale costi</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red)">-${fmtEur(c)}</span>
+          </div>
+          <div class="field-row" style="border:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border2)">
+            <span class="field-label" style="font-weight:700;color:var(--text);font-size:14px">Profitto netto</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${isPos?'var(--green)':'var(--red)'}">${fmtProfit(p)}</span>
+          </div>
         </div>
       </div>
       <div class="bar-track"><div class="bar-fill ${isPos?'green':'red'}" style="width:${barW}%"></div></div>
