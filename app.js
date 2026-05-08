@@ -40,7 +40,8 @@ const COST_LABELS = {
 // ── Helpers ───────────────────────────────────────────
 function totalCosti(t) { return COST_KEYS.reduce((s,k) => s+(parseFloat(t[k])||0), 0); }
 function totalRicaviMensili(t) { return (parseFloat(t.ricavoMensile)||0); }
-function profittoTruck(t, tripRevenue) { return (tripRevenue||0) + totalRicaviMensili(t) - totalCosti(t); }
+function costiManualiTruck(truckId) { return costi.filter(c=>String(c.truckId)===String(truckId)).reduce((s,c)=>s+(parseFloat(c.importo)||0),0); }
+function profittoTruck(t, tripRevenue) { return (tripRevenue||0) + totalRicaviMensili(t) - totalCosti(t) - costiManualiTruck(t.id); }
 function fmtEur(n) { return n.toLocaleString('it-IT')+'€'; }
 function fmtProfit(n) { return (n>=0?'+':'')+fmtEur(n); }
 function fmtMono(n) { return n.toLocaleString('it-IT'); }
@@ -101,7 +102,8 @@ async function loadAllMonths() {
           const tRevenue = tr.filter(v=>v.truckId===t.id).reduce((x,v)=>x+(parseFloat(v.amount)||0),0);
           return s + tRevenue + (parseFloat(t.ricavoMensile)||0);
         }, 0);
-        const totalC = ts.reduce((s,t) => s+totalCosti(t), 0);
+        const totalCM = (d.costi||[]).reduce((s,c)=>s+(parseFloat(c.importo)||0),0);
+        const totalC = ts.reduce((s,t) => s+totalCosti(t), 0) + totalCM;
         const totalKm = tr.reduce((s,v)=>s+(parseFloat(v.km)||0),0);
         results.push({ month, totalR, totalC, profitto: totalR-totalC, viaggi: tr.length, km: totalKm });
       } else {
@@ -206,7 +208,8 @@ function renderDashboard() {
   });
 
   const totalR = trucks.reduce((s,t) => s+(tripsByTruck[t.id]||0)+(parseFloat(t.ricavoMensile)||0), 0);
-  const totalC = trucks.reduce((s,t) => s+totalCosti(t), 0);
+  const totalCostiManuali = costi.reduce((s,c)=>s+(parseFloat(c.importo)||0),0);
+  const totalC = trucks.reduce((s,t) => s+totalCosti(t), 0) + totalCostiManuali;
   const totalP = totalR - totalC;
   const margin = totalR>0 ? Math.round(totalP/totalR*100) : 0;
   const totalKm = trips.reduce((s,v)=>s+(parseFloat(v.km)||0),0);
@@ -471,7 +474,9 @@ function renderCamion() {
 
   document.getElementById('truckList').innerHTML = trucks.map(t=>{
     const tripRev = tripsByTruck[t.id]||0;
-    const c = totalCosti(t);
+    const costiManuali = costiManualiTruck(t.id);
+    const cFissi = totalCosti(t);
+    const c = cFissi + costiManuali;
     const r = tripRev + (parseFloat(t.ricavoMensile)||0);
     const p = r - c;
     const barW = Math.round(Math.abs(p)/maxAbs*100);
@@ -513,6 +518,8 @@ function renderCamion() {
           <div class="section-label" style="margin-top:16px">Riepilogo mese</div>
           <div class="field-row"><span class="field-label">Ricavi da viaggi</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px">${fmtEur(tripRev)}</span></div>
           <div class="field-row"><span class="field-label">Ricavi fissi</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px">${fmtEur(parseFloat(t.ricavoMensile)||0)}</span></div>
+          <div class="field-row"><span class="field-label">Costi fissi</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px">${fmtEur(cFissi)}</span></div>
+          <div class="field-row"><span class="field-label">Costi manuali</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red)">-${fmtEur(costiManuali)}</span></div>
           <div class="field-row"><span class="field-label">Totale costi</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px">${fmtEur(c)}</span></div>
           <div class="field-row" style="border:none;margin-top:4px"><span class="field-label" style="font-weight:600;color:var(--text)">Profitto</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:${isPos?'var(--green)':'var(--red)'}">${fmtProfit(p)}</span></div>
         </div>
