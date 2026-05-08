@@ -116,14 +116,16 @@ async function loadAllMonths() {
       const snap = await getDoc(doc(db, 'flotte', currentUserId, 'mesi', key));
       if (snap.exists()) {
         const d = snap.data();
-        const ts = d.trucks || [];
+        // trucks are global, trips and costi are per month
         const tr = d.trips || [];
-        const totalR = ts.reduce((s,t) => {
-          const tRevenue = tr.filter(v=>v.truckId===t.id).reduce((x,v)=>x+(parseFloat(v.amount)||0),0);
-          return s + tRevenue + (parseFloat(t.ricavoMensile)||0);
-        }, 0);
-        const totalCM = (d.costi||[]).reduce((s,c)=>s+(parseFloat(c.importo)||0),0);
-        const totalC = ts.reduce((s,t) => s+totalCosti(t), 0) + totalCM;
+        const costiMese = d.costi || [];
+        // ricavi = sum of all trip amounts + fixed monthly revenues per truck
+        const totalTripR = tr.reduce((s,v)=>s+(parseFloat(v.amount)||0),0);
+        const totalFixedR = trucks.reduce((s,t)=>s+(parseFloat(t.ricavoMensile)||0),0);
+        const totalR = totalTripR + totalFixedR;
+        // costi = fixed costs per truck + manual costs this month
+        const totalCM = costiMese.reduce((s,c)=>s+(parseFloat(c.importo)||0),0);
+        const totalC = trucks.reduce((s,t) => s+totalCosti(t), 0) + totalCM;
         const totalKm = tr.reduce((s,v)=>s+(parseFloat(v.km)||0),0);
         results.push({ month, totalR, totalC, profitto: totalR-totalC, viaggi: tr.length, km: totalKm });
       } else {
@@ -203,6 +205,7 @@ window.showPage = function(name) {
   document.getElementById('nav-'+name).classList.add('active');
   currentPage = name;
   if (name === 'storico') renderStorico();
+  else if (name === 'costi') { renderCosti(); }
   else renderCurrentPage();
 };
 
@@ -431,6 +434,11 @@ window.closeTripModalOutside = function(e) { if(e.target===document.getElementBy
 // ── STORICO ───────────────────────────────────────────
 async function renderStorico() {
   document.getElementById('storicoTable').innerHTML = '<div class="empty-state">Caricamento...</div>';
+  // Ensure trucks are loaded before computing storico
+  if (trucks.length === 0) {
+    const truckSnap = await getDoc(doc(db, 'flotte', currentUserId, 'config', 'trucks'));
+    if (truckSnap.exists()) trucks = truckSnap.data().trucks || [];
+  }
   const data = await loadAllMonths();
   const currentMonth = document.getElementById('monthSelect')?.value;
 
