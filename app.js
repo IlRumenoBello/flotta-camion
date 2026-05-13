@@ -587,28 +587,19 @@ function renderCamion() {
       </div>
 
       <div class="truck-body">
-        <!-- COLONNA SINISTRA: costi fissi (input) + costi manuali (auto) -->
+        <!-- COLONNA SINISTRA: costi dalla sezione Costi (automatici) -->
         <div>
-          <div class="section-label">Costi fissi mensili</div>
-          ${COST_KEYS.map(k=>`
-            <div class="field-row">
-              <span class="field-label">${COST_LABELS[k]}</span>
-              <input class="field-input" type="number" min="0" step="1" value="${t[k]}"
-                onchange="updateTruckField(${t.id},'${k}',this.value)"
-                oninput="updateTruckField(${t.id},'${k}',this.value)">
-            </div>`).join('')}
-
+          <div class="section-label">Costi del mese</div>
           ${costiManuali > 0 ? `
-          <div class="section-label" style="margin-top:14px;color:var(--red)">Costi inseriti manualmente</div>
-          ${Object.entries(truckCostiCat).map(([cat, tot])=>`
-            <div class="field-row">
-              <span class="field-label" style="display:flex;align-items:center;gap:5px">
-                <span style="width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block"></span>
-                ${cat}
-              </span>
-              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red)">-${fmtEur(tot)}</span>
-            </div>`).join('')}
-          ` : ''}
+            ${Object.entries(truckCostiCat).map(([cat, tot])=>`
+              <div class="field-row">
+                <span class="field-label" style="display:flex;align-items:center;gap:5px">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block"></span>
+                  ${cat}
+                </span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red)">-${fmtEur(tot)}</span>
+              </div>`).join('')}
+          ` : '<div style="font-size:13px;color:var(--text3);padding:8px 0">Nessun costo registrato.<br>Aggiungili nella sezione <b style=\'color:var(--text2)\'>Costi</b>.</div>'}
         </div>
 
         <!-- COLONNA DESTRA: ricavi + riepilogo -->
