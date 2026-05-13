@@ -180,17 +180,43 @@ onAuthStateChanged(auth, user => {
 });
 
 function initSelects() {
-  const ySel = document.getElementById('yearSelect');
   const now = new Date();
-  ySel.innerHTML = '';
-  for (let y = now.getFullYear()-2; y <= now.getFullYear()+1; y++) {
-    const o = document.createElement('option');
-    o.value=y; o.textContent=y;
-    if(y===now.getFullYear()) o.selected=true;
-    ySel.appendChild(o);
-  }
+  // Init both desktop and mobile year selects
+  ['yearSelect','yearSelectMobile'].forEach(id => {
+    const ySel = document.getElementById(id);
+    if (!ySel) return;
+    ySel.innerHTML = '';
+    for (let y = now.getFullYear()-2; y <= now.getFullYear()+1; y++) {
+      const o = document.createElement('option');
+      o.value=y; o.textContent=y;
+      if(y===now.getFullYear()) o.selected=true;
+      ySel.appendChild(o);
+    }
+  });
   document.getElementById('monthSelect').value = MONTHS[now.getMonth()];
+  const mMobile = document.getElementById('monthSelectMobile');
+  if (mMobile) mMobile.value = MONTHS[now.getMonth()];
 }
+
+// Sync mobile selects → desktop selects → reload
+window.onMobilePeriodChange = function() {
+  const m = document.getElementById('monthSelectMobile')?.value;
+  const y = document.getElementById('yearSelectMobile')?.value;
+  if (m) document.getElementById('monthSelect').value = m;
+  if (y) document.getElementById('yearSelect').value = y;
+  loadData();
+};
+
+// Keep mobile selects in sync when desktop changes
+window.onPeriodChange = function() {
+  const m = document.getElementById('monthSelect')?.value;
+  const y = document.getElementById('yearSelect')?.value;
+  const mMobile = document.getElementById('monthSelectMobile');
+  const yMobile = document.getElementById('yearSelectMobile');
+  if (mMobile && m) mMobile.value = m;
+  if (yMobile && y) yMobile.value = y;
+  loadData();
+};
 
 // ── Navigation ────────────────────────────────────────
 window.showPage = function(name) {
@@ -204,7 +230,6 @@ window.showPage = function(name) {
   else renderCurrentPage();
 };
 
-window.onPeriodChange = function() { loadData(); };
 
 function renderCurrentPage() {
   if (currentPage === 'dashboard') renderDashboard();
@@ -785,3 +810,52 @@ window.deleteCosto = function(id) {
 
 window.closeCostoModal = function() { document.getElementById('costoModal').style.display='none'; };
 window.closeCostoModalOutside = function(e) { if(e.target===document.getElementById('costoModal')) closeCostoModal(); };
+
+// ── Mobile sync ───────────────────────────────────────
+function initMobileSelects() {
+  const mMonth = document.getElementById('monthSelectMobile');
+  const mYear = document.getElementById('yearSelectMobile');
+  if (!mMonth || !mYear) return;
+
+  // Populate months
+  mMonth.innerHTML = MONTHS.map(m=>`<option>${m}</option>`).join('');
+
+  // Populate years
+  const now = new Date().getFullYear();
+  mYear.innerHTML = '';
+  for (let y = now-2; y <= now+1; y++) {
+    const o = document.createElement('option');
+    o.value=y; o.textContent=y;
+    if(y===now) o.selected=true;
+    mYear.appendChild(o);
+  }
+
+  // Sync initial values
+  mMonth.value = document.getElementById('monthSelect').value;
+  mYear.value = document.getElementById('yearSelect').value;
+}
+
+window.syncMobileMonth = function() {
+  const val = document.getElementById('monthSelectMobile').value;
+  document.getElementById('monthSelect').value = val;
+  loadData();
+};
+window.syncMobileYear = function() {
+  const val = document.getElementById('yearSelectMobile').value;
+  document.getElementById('yearSelect').value = val;
+  loadData();
+};
+
+// Keep mobile selects in sync when desktop selects change
+document.addEventListener('DOMContentLoaded', () => {
+  const mSel = document.getElementById('monthSelect');
+  const ySel = document.getElementById('yearSelect');
+  if (mSel) mSel.addEventListener('change', () => {
+    const mob = document.getElementById('monthSelectMobile');
+    if (mob) mob.value = mSel.value;
+  });
+  if (ySel) ySel.addEventListener('change', () => {
+    const mob = document.getElementById('yearSelectMobile');
+    if (mob) mob.value = ySel.value;
+  });
+});

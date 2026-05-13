@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>FlottaManager — Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -97,6 +97,20 @@
 
     <!-- MAIN -->
     <main class="main-wrap">
+
+      <!-- MOBILE TOP BAR -->
+      <div class="mobile-topbar" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="logo-icon" style="width:28px;height:28px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
+          <span style="font-size:15px;font-weight:600">FlottaManager</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <select id="monthSelectMobile" onchange="syncMobileMonth()" style="font-size:12px;padding:4px 6px;max-width:90px"></select>
+          <select id="yearSelectMobile" onchange="syncMobileYear()" style="font-size:12px;padding:4px 6px;max-width:60px"></select>
+        </div>
+      </div>
 
       <!-- DASHBOARD PAGE -->
       <div id="page-dashboard" class="page active">
