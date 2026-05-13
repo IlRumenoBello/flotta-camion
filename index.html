@@ -7,6 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 </head>
 <body>
 
@@ -294,6 +297,27 @@
 
   <div id="saveToast" class="toast">Salvato ✓</div>
 
+  <script>
+    // Auto-update: register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        // Check for updates every time page loads
+        reg.update();
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New version available — reload automatically
+              navigator.serviceWorker.controller.postMessage({ action: 'skipWaiting' });
+              window.location.reload();
+            }
+          });
+        });
+      });
+      // If SW tells us to reload, do it
+      navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+    }
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script type="module" src="app.js"></script>
 </body>
