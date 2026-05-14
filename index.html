@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>FlottaManager — Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -115,8 +115,20 @@
         </div>
       </div>
 
+      <!-- DESKTOP TOPBAR -->
+      <div class="topbar">
+        <div>
+          <div class="topbar-title" id="topbarTitle">Dashboard</div>
+          <div class="topbar-sub" id="topbarSub"></div>
+        </div>
+        <div class="topbar-right">
+          <span style="font-size:12px;color:var(--text2)" id="topbarUser"></span>
+        </div>
+      </div>
+
       <!-- DASHBOARD PAGE -->
       <div id="page-dashboard" class="page active">
+        <div class="page-body">
         <div class="page-header">
           <div>
             <h1 id="dashTitle">Dashboard</h1>
@@ -144,6 +156,7 @@
 
       <!-- VIAGGI PAGE -->
       <div id="page-viaggi" class="page">
+        <div class="page-body">
         <div class="page-header">
           <div>
             <h1>Viaggi</h1>
@@ -152,8 +165,7 @@
           <button class="btn-primary" onclick="openTripModal()">+ Nuovo viaggio</button>
         </div>
         <div class="card">
-          <div class="card-header" style="margin-bottom:12px">
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <div class="filters-row">
               <select id="filterTruck" onchange="renderViagg()" style="font-size:13px">
                 <option value="">Tutti i camion</option>
               </select>
@@ -167,6 +179,7 @@
 
       <!-- STORICO PAGE -->
       <div id="page-storico" class="page">
+        <div class="page-body">
         <div class="page-header">
           <h1>Storico annuale</h1>
         </div>
@@ -184,6 +197,7 @@
 
       <!-- COSTI PAGE -->
       <div id="page-costi" class="page">
+        <div class="page-body">
         <div class="page-header">
           <div>
             <h1>Costi</h1>
@@ -193,8 +207,7 @@
         </div>
         <div class="summary-grid" id="costiSummary"></div>
         <div class="card" style="margin-top:4px">
-          <div class="card-header" style="margin-bottom:12px">
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <div class="filters-row">
               <select id="filterCostoTruck" onchange="renderCosti()" style="font-size:13px"><option value="">Tutti i camion</option></select>
               <select id="filterCostoCategoria" onchange="renderCosti()" style="font-size:13px"><option value="">Tutte le categorie</option><option>Gasolio</option><option>Autista</option><option>Manutenzione</option><option>Pedaggi</option><option>Assicurazione</option><option>Ammortamento</option><option>Altro</option></select>
               <input type="text" id="filterCostoSearch" placeholder="Cerca descrizione..." oninput="renderCosti()" style="font-size:13px;padding:6px 10px;min-width:160px">
@@ -207,6 +220,7 @@
 
       <!-- CAMION PAGE -->
       <div id="page-camion" class="page">
+        <div class="page-body">
         <div class="page-header">
           <div><h1>Camion</h1><p class="page-sub">Costi fissi mensili per veicolo</p></div>
           <button class="btn-primary" onclick="addTruck()">+ Aggiungi camion</button>

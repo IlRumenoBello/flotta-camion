@@ -170,6 +170,7 @@ onAuthStateChanged(auth, user => {
     document.getElementById('appScreen').style.display = 'flex';
     document.getElementById('userEmail').textContent = user.email;
     document.getElementById('userAvatar').textContent = user.email[0].toUpperCase();
+    const tu = document.getElementById('topbarUser'); if(tu) tu.textContent = user.email;
     initSelects();
     loadData();
   } else {
@@ -219,12 +220,18 @@ window.onPeriodChange = function() {
 };
 
 // ── Navigation ────────────────────────────────────────
+const PAGE_TITLES = { dashboard:'Dashboard', viaggi:'Viaggi', costi:'Costi', camion:'Camion', storico:'Storico annuale' };
+
 window.showPage = function(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.getElementById('nav-'+name).classList.add('active');
   currentPage = name;
+  const tb = document.getElementById('topbarTitle');
+  const ts = document.getElementById('topbarSub');
+  if (tb) tb.textContent = PAGE_TITLES[name] || name;
+  if (ts) ts.textContent = getPeriod();
   if (name === 'storico') renderStorico();
   else if (name === 'costi') { renderCosti(); }
   else renderCurrentPage();
@@ -258,12 +265,30 @@ function renderDashboard() {
   const totalKm = trips.reduce((s,v)=>s+(parseFloat(v.km)||0),0);
 
   document.getElementById('summaryCards').innerHTML = `
-    <div class="s-card"><div class="s-label">Camion</div><div class="s-value">${trucks.length}</div></div>
-    <div class="s-card"><div class="s-label">Ricavi</div><div class="s-value">${fmtEur(totalR)}</div></div>
-    <div class="s-card"><div class="s-label">Costi</div><div class="s-value">${fmtEur(totalC)}</div></div>
-    <div class="s-card ${totalP>=0?'green':'red'}"><div class="s-label">Profitto</div><div class="s-value ${totalP>=0?'green':'red'}">${fmtProfit(totalP)}</div></div>
-    <div class="s-card ${margin>=0?'green':'red'}"><div class="s-label">Margine</div><div class="s-value ${margin>=0?'green':'red'}">${margin}%</div></div>
-    <div class="s-card blue"><div class="s-label">Km totali</div><div class="s-value">${fmtMono(totalKm)}</div></div>
+    <div class="s-card">
+      <div class="s-card-icon blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+      <div class="s-label">Camion attivi</div><div class="s-value blue">${trucks.length}</div>
+    </div>
+    <div class="s-card">
+      <div class="s-card-icon green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+      <div class="s-label">Ricavi</div><div class="s-value green">${fmtEur(totalR)}</div>
+    </div>
+    <div class="s-card">
+      <div class="s-card-icon red"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+      <div class="s-label">Costi</div><div class="s-value red">${fmtEur(totalC)}</div>
+    </div>
+    <div class="s-card">
+      <div class="s-card-icon ${totalP>=0?'green':'red'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+      <div class="s-label">Profitto netto</div><div class="s-value ${totalP>=0?'green':'red'}">${fmtProfit(totalP)}</div>
+    </div>
+    <div class="s-card">
+      <div class="s-card-icon ${margin>=0?'green':'red'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8l-8 8M10 8h6v6"/></svg></div>
+      <div class="s-label">Margine</div><div class="s-value ${margin>=0?'green':'red'}">${margin}%</div>
+    </div>
+    <div class="s-card">
+      <div class="s-card-icon amber"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="s-label">Km totali</div><div class="s-value amber">${fmtMono(totalKm)}</div>
+    </div>
   `;
 
   renderProfitChart(tripsByTruck);
